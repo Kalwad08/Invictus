@@ -1,0 +1,319 @@
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Scanner;
+import java.util.stream.Collectors;
+
+class User {
+    private String username;
+
+    public User(String username) {
+        this.username = username;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+}
+
+class Item {
+    private String name;
+    private String description;
+    private double startBid;
+    private double currentBid;
+    private User owner;
+    private boolean sold;
+    private double soldPrice;
+    private User winningBidder;
+
+    public Item(String name, String description, double startBid, User owner) {
+        this.name = name;
+        this.description = description;
+        this.startBid = startBid;
+        this.currentBid = startBid;
+        this.owner = owner;
+        this.sold = false;
+        this.soldPrice = 0.0;
+        this.winningBidder = null;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public double getCurrentBid() {
+        return currentBid;
+    }
+
+    public void placeBid(double amount, User bidder) {
+        if (!sold && amount > currentBid) {
+            currentBid = amount;
+            System.out.println("\nBid placed successfully!");
+            System.out.println("\nCurrent bid for " + name + ": $" + currentBid);
+        } else {
+            System.out.println("\nBid must be higher than the current bid for " + name + ".");
+        }
+    }
+
+    public User getOwner() {
+        return owner;
+    }
+
+    public void sellItem(User winningBidder) {
+        this.sold = true;
+        this.soldPrice = currentBid;
+        this.winningBidder = winningBidder;
+    }
+
+    public boolean isSold() {
+        return sold;
+    }
+
+    public double getSoldPrice() {
+        return soldPrice;
+    }
+
+    public User getWinningBidder() {
+        return winningBidder;
+    }
+}
+
+class AuctionPlatform {
+    private List<Item> items;
+    private List<User> users;
+    private List<Item> soldItems;
+
+    public AuctionPlatform() {
+        this.items = new ArrayList<>();
+        this.users = new ArrayList<>();
+        this.soldItems = new ArrayList<>();
+    }
+
+    public void addUser(User user) {
+        users.add(user);
+    }
+
+    public void addItem(Item item) {
+        items.add(item);
+    }
+
+    public void displayItems() {
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.println("\nWelcome to the Online Auction Platform!");
+        boolean showMenu = true;
+
+        if (showMenu) {
+            System.out.println("\nWhat would you like to do?");
+            System.out.println("\n1. Participate in the auction");
+            System.out.println("2. Display the list of items available for auction");
+            System.out.println("3. Display the list of sold items");
+            System.out.println("4. Exit");
+        }
+
+        while (true) {
+
+            System.out.print("\nEnter your choice: ");
+            int choice;
+            try {
+                choice = Integer.parseInt(scanner.nextLine());
+            } catch (NumberFormatException e) {
+                System.out.println("\nInvalid input. Please enter a valid option.");
+                continue;
+            }
+
+            switch (choice) {
+                case 1:
+                    displayItemsForAuction(scanner);
+                    showMenu = false;
+                    break;
+                case 2:
+                    displayAvailableItems();
+                    showMenu = true;
+                    break;
+                case 3:
+                    displaySoldItems();
+                    showMenu = true;
+                    break;
+                case 4:
+                    System.out.println("\nThank you for using the Online Auction Platform. Goodbye!");
+                    return;
+                default:
+                    System.out.println("\nInvalid choice. Please select a valid option.");
+                    showMenu = true;
+            }
+        }
+    }
+
+    private void displayAvailableItems() {
+        List<Item> availableItems = items.stream().filter(item -> !item.isSold()).collect(Collectors.toList());
+        if (availableItems.isEmpty()) {
+            System.out.println("\nNo items available for auction.");
+        } else {
+            System.out.println("\nAvailable Items for Auction:");
+            for (Item item : availableItems) {
+                System.out.println(item.getName());
+            }
+        }
+    }
+
+    private void displayItemsForAuction(Scanner scanner) {
+    while (true) {
+        List<Item> availableItems = items.stream().filter(item -> !item.isSold()).collect(Collectors.toList());
+        if (availableItems.isEmpty()) {
+            System.out.println("\nNo items available for auction.");
+            break;
+        }
+
+        System.out.println("\nAvailable Items for Auction:");
+        for (Item item : availableItems) {
+            System.out.println("Name: " + item.getName());
+            System.out.println("Description: " + item.getDescription());
+            System.out.println("Current Bid: $" + item.getCurrentBid());
+            System.out.println("_\n");
+        }
+
+        System.out.print("\nEnter the name of the item to bid on (type 'exit' to go back): ");
+        String itemName = scanner.nextLine().trim();
+
+        if (itemName.equalsIgnoreCase("exit")) {
+            System.out.println("\nGoing back to the main menu...");
+            System.out.println("\nWhat would you like to do?");
+            System.out.println("\n1. Participate in the auction");
+            System.out.println("2. Display the list of items available for auction");
+            System.out.println("3. Display the list of sold items");
+            System.out.println("4. Exit");
+
+            break;
+        }
+
+        Item selectedItem = getItemByName(itemName);
+        if (selectedItem == null) {
+            System.out.println("\nItem not found. Please enter a valid item name.");
+            continue;
+        }
+
+        boolean itemSold = false; // Flag to track if the item has been sold
+        while (!itemSold) {
+            System.out.print("\nHow many bidders are interested in " + itemName + "? ");
+            int numBidders;
+            try {
+                numBidders = Integer.parseInt(scanner.nextLine());
+            } catch (NumberFormatException e) {
+                System.out.println("\nInvalid input. Please enter a valid number of bidders.");
+                continue;
+            }
+
+            List<User> bidders = new ArrayList<>();
+            for (int i = 0; i < numBidders; i++) {
+                System.out.print("Enter bidder " + (i + 1) + "'s name: ");
+                String bidderName = scanner.nextLine();
+                bidders.add(new User(bidderName));
+            }
+
+            while (bidders.size() > 1) {
+                Iterator<User> iterator = bidders.iterator();
+                while (iterator.hasNext()) {
+                    User bidder = iterator.next();
+                    System.out.print("\n" + bidder.getUsername() + ", enter your bid amount for " + itemName + " (type 'quit' to quit bidding): ");
+                    String bidInput = scanner.nextLine().trim();
+                    if (bidInput.equalsIgnoreCase("quit")) {
+                        iterator.remove();
+                        if (bidders.size() == 1) {
+                            User winningBidder = bidders.get(0);
+                            selectedItem.sellItem(winningBidder);
+                            System.out.println("\nItem " + itemName + " is sold to " + winningBidder.getUsername() + " for $" + selectedItem.getCurrentBid() + ".");
+                            items.remove(selectedItem);
+                            soldItems.add(selectedItem); // Add the sold item to the list of sold items
+                            itemSold = true; // Set the flag to true
+                            break;
+                        }
+                        continue;
+                    }
+                    double bidAmount;
+                    try {
+                        bidAmount = Double.parseDouble(bidInput);
+                    } catch (NumberFormatException e) {
+                        System.out.println("\nInvalid input. Please enter a valid bid amount or 'quit' to quit bidding.");
+                        continue;
+                    }
+
+                    if (bidAmount > selectedItem.getCurrentBid()) {
+                        selectedItem.placeBid(bidAmount, bidder);
+                    } else {
+                        System.out.println("\nBid must be higher than the current bid for " + itemName + ".");
+                    }
+                }
+
+                if (itemSold) {
+                    break;
+                }
+            }
+
+            if (bidders.size() == 1 && !itemSold) {
+                User winningBidder = bidders.get(0);
+                selectedItem.sellItem(winningBidder);
+                System.out.println("\nItem " + itemName + " is sold to " + winningBidder.getUsername() + " for $" + selectedItem.getCurrentBid() + ".");
+                items.remove(selectedItem);
+                soldItems.add(selectedItem); // Add the sold item to the list of sold items
+                itemSold = true; // Set the flag to true
+            }
+        }
+    }
+}
+
+
+    private void displaySoldItems() {
+        if (soldItems.isEmpty()) {
+            System.out.println("\nNo items have been sold yet.");
+        } else {
+            System.out.println("\nSold Items:\n");
+            for (Item item : soldItems) {
+                System.out.println("Name: " + item.getName());
+                System.out.println("Description: " + item.getDescription());
+                System.out.println("Sold Price: $" + item.getSoldPrice());
+                System.out.println("Sold to: " + item.getWinningBidder().getUsername());
+                System.out.println("_\n");
+            }
+        }
+    }
+
+    private Item getItemByName(String itemName) {
+        for (Item item : items) {
+            if (item.getName().equalsIgnoreCase(itemName.trim())) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    // Other methods remain the same
+}
+
+class AuctionPlatformExample {
+    public static void main(String[] args) {
+        AuctionPlatform auctionPlatform = new AuctionPlatform();
+
+        User user1 = new User("User1");
+        User user2 = new User("User2");
+
+        Item item1 = new Item("Item1", "Description for Item1", 50.0, user1);
+        Item item2 = new Item("Item2", "Description for Item2", 30.0, user2);
+        Item item3 = new Item("Item3", "Description for Item3", 40.0, user1);
+        Item item4 = new Item("Item4", "Description for Item4", 20.0, user2);
+
+        auctionPlatform.addUser(user1);
+        auctionPlatform.addUser(user2);
+
+        auctionPlatform.addItem(item1);
+        auctionPlatform.addItem(item2);
+        auctionPlatform.addItem(item3);
+        auctionPlatform.addItem(item4);
+
+        auctionPlatform.displayItems();
+    }
+}
